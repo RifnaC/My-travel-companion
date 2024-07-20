@@ -1,8 +1,8 @@
-import User from '../models/User';
+import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
-import { uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 // nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Register a new User
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
     const { username, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = uuidv4();
@@ -44,7 +44,7 @@ exports.register = async (req, res) => {
 };
 
 // verify user
-exports.verifyEmail = async (req, res) => {
+export const verifyEmail = async (req, res) => {
     const { token } = req.params;
     const user = await User.findOne({ verificationToken: token });
 
@@ -60,7 +60,7 @@ exports.verifyEmail = async (req, res) => {
 };
 
 // user login
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
@@ -84,6 +84,7 @@ exports.login = async (req, res) => {
 };
 
 // protected route
-exports.protected = (req, res) => {
+export const home = (req, res) => {
     res.status(200).json({ message: 'Welcome to the protected route' });
 };
+
