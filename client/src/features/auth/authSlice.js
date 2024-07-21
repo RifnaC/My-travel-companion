@@ -5,7 +5,7 @@ export const registerUser = createAsyncThunk(
     'user/registerUser',
     async ({ email, password }, thunkAPI) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/users/register', { email, password });
+            const response = await axios.post('http://localhost:5000/api/auth/register', { email, password });
             return response.data;
         } catch (error) {
             return thunkAPI.rejectWithValue(error.response.data);
@@ -17,7 +17,10 @@ export const loginUser = createAsyncThunk(
     'user/loginUser',
     async ({ email, password }, thunkAPI) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/users/login', { email, password });
+            const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            if (!response.data.isVerified) {
+                return thunkAPI.rejectWithValue('Please verify your email to continue.');
+            }
             return response.data;
         } catch (error) {
             return thunkAPI.rejectWithValue(error.response.data);

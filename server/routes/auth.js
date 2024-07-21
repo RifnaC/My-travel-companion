@@ -4,7 +4,7 @@ import { home, login, register, verifyEmail } from '../controllers/authControlle
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 
 router.post('/register', register);
-router.get('/verify/:token', verifyEmail);
+router.get('/verify', verifyEmail);
 router.post('/login', login);
 router.get('/protected', authMiddleware, home);
 

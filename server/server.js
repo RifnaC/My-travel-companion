@@ -1,22 +1,22 @@
 import express from 'express';
-import mongoose from 'mongoose';
+import cors from 'cors';
 import bodyParser from 'body-parser';
+import connectDB from './config/database.js'
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth.js';
-import cors from "cors"
-
+import auth from './routes/auth.js'
+import maps from './routes/maps.js'
 dotenv.config();
+
 const app = express();
+
 app.use(cors());
 app.use(bodyParser.json());
 
-// mongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log(err));
+connectDB();
 
-// routes
-app.use('/api/auth', authRoutes);
+// Routes
+app.use('/api/auth', auth);
+app.use('/api/maps', maps);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

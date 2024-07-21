@@ -7,6 +7,7 @@ import MapsPage from './pages/MapsPage';
 import { Provider } from 'react-redux';
 import { store } from './app/store';
 import { ChakraProvider } from '@chakra-ui/react'
+import VerificationError from './components/VerificationError';
 
 const App = () => {
     return (
@@ -16,6 +17,7 @@ const App = () => {
                 <Routes>
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/verify" element={<VerificationError />} />
                     <Route path='/home' element={
                       <ProtectedRoute>
                         <MapsPage />
