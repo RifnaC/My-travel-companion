@@ -1,43 +1,37 @@
 import axios from 'axios';
 import SearchHistory from '../models/SearchHistory.js';
 import User from '../models/User.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Search Location
 export const searchLocation = async (req, res) => {
-  const term  = req.body;
+  const { searchTerm }  = req.body;
   try {
-    const response = await axios.get(`https://maps.googleapis.com/maps/api/place/textsearch/json`, {
+    console.log(searchTerm)
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
       params: {
-        query: term.searchTerm,
-        key: process.env.GOOGLE_MAPS_API_KEY
-      }
+        q: searchTerm,
+        format: 'json',
+      },
     });
-    // Ensure that results exist
-    if (!response.data.results || response.data.results.length === 0) {
+    if (response.data.length === 0) {
       return res.status(404).json({ msg: 'No locations found' });
     }
-    const location = response.data.results[0];
-    console.log(location);
-    const imageUrl = location.photos && location.photos.length > 0
-        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${location.photos[0].photo_reference}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-        : '';
 
-   const searchHistory = new SearchHistory({
-    user: req.user._id,
-    term: searchTerm,
-    location,
-    imageUrl
-  });
+    const location = response.data[0];
+
+    const searchHistory = await SearchHistory.create({
+      user: req.user, 
+      term: searchTerm,
+      location,
+    });
   
-    await searchHistory.save();
-    console.log("search", searchHistory)
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user);
     if (user) {
-      console.log("user", user)
       user.searchHistory.push(searchHistory);
       await user.save();
     } else {
-      console.log("user", user)
       return res.status(404).json({ msg: 'User not found' });
     }
     res.json({ location, imageUrl });

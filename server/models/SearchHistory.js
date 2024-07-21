@@ -15,9 +15,6 @@ const SearchHistorySchema = new Schema({
         type: Object, 
         required: true 
     },
-    imageUrl: { 
-        type: String 
-    }
 }, { timestamps: true });
 
 export default mongoose.model('SearchHistory', SearchHistorySchema);

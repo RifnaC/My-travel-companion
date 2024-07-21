@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
 dotenv.config();
+
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
@@ -17,14 +18,14 @@ export const register = async (req, res) => {
   const { email, password } = req.body;
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
+    if (existingUser) return res.status(400).json({ msg: 'Email already exists' });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = await User.create({ email, password: hashedPassword });
 
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    const url = `http://localhost:5174/verify/${token}`;
+    const url = `${process.env.URL}/verify/${token}`;
     const mailOptions = {
       from: process.env.MAIL_USER,
       to: newUser.email,
