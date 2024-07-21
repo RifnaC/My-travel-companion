@@ -1,25 +1,24 @@
-import mongoose from "mongoose";
-import { type } from "os";
+import mongoose from 'mongoose';
+const Schema = mongoose.Schema;
 
-const userSchema = new mongoose.Schema({
-    email:{
-        type: String,
-        required: true,
-        unique: true,
+const UserSchema = new Schema({
+    email: { 
+        type: String, 
+        required: true, 
+        unique: true 
     },
-    password:{
-        type: String,
-        required: true
+    password: {
+        type: String, 
+        required: true 
     },
     isVerified: {
-        type: Boolean,
-        default: false
+        type: Boolean, 
+        default: false 
     },
-    token:{
-        type: String
-    }
-})
+    searchHistory: [{ 
+        type: Schema.Types.ObjectId, 
+        ref: 'SearchHistory' 
+    }]
+});
 
-const User = mongoose.model("User", userSchema);
-
-export default User
+export default mongoose.model('User', UserSchema);

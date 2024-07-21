@@ -1,75 +1,91 @@
-import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import {sendVerificationEmail} from '../utils/nodeMailer.js';
+import nodemailer from 'nodemailer';
+import User from '../models/User.js';
+import dotenv from 'dotenv';
+dotenv.config();
+const transporter = nodemailer.createTransport({
+  service: 'Gmail',
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
+  }
+}); 
 
-// Register a new User
+// Register Route
 export const register = async (req, res) => {
-    const { email, password } = req.body;
-    console.log("helloo");
-    try {
-        const existingUser = await User.findOne({email});
-        console.log("helloo2");
-        if(existingUser){
-            return res.status(400).json({ message: 'User already exists' })
-        }
-        console.log("helloo3");
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await User.create({ email, password:hashedPassword });
-        console.log("helloo4");
-        await user.save();
-        console.log("helloo5");
-        await sendVerificationEmail(user);
-        res.status(200).json({ message: 'Registration successful! Please check your email to verify your account.' });
+  const { email, password } = req.body;
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const newUser = await User.create({ email, password: hashedPassword });
+
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const url = `http://localhost:5174/verify/${token}`;
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: newUser.email,
+      subject: 'Verify Email',
+      text: `Please click on the link below to verify your email.\n ${url}`,
     }
-};
+    transporter.sendMail(mailOptions,(err, info) =>{ 
+      if (err) {
+        console.log("Error sending message: " + err);
+      } else {
+        console.log("Message sent succesfully.");
+      }
+  });
+    return res.json({ msg: 'Registration successful, please check your email to verify your account' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+}
 
-// verify user
-export const verifyEmail = async (req, res) => {
-    const { token } = req.query;
-    try {
-        const user = await User.findOne({token});
-        if(!user){
-            return res.status(400).json({message: 'Invalid or expired token'});
-        }
-        user.isVerified = true;
-        user.token = undefined;
-        await user.save();
-        res.status(200).json({ message: 'Email verified successfully' })
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// user login
-export const login = async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-
+// Verify Email Route
+export const verified = async (req, res) => {
+  try {
+    const token  = req.params.token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+    const user = await User.findById(userId);
     if (!user) {
-        return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ msg: 'Invalid verification link' });
     }
+   
+    if (user.isVerified === true) {
+      return res.status(400).json({ msg: 'User is already verified' });
+    }
+    user.isVerified = true;
+    await user.save();
 
+    res.json({ msg: 'Email verified successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+}
+
+
+// Login Route
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email:email });
+    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
     const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
+    if (!user.isVerified) return res.status(400).json({ msg: 'Please verify your email to login' });
 
-    if (!isMatch) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { id: user._id, email: user.email } });
 
-    if (!user.isVerified) {
-        return res.status(400).json({ message: 'Please verify your email first' });
-    }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(200).json({ token });
-};
-
-// protected route
-export const home = (req, res) => {
-    res.status(200).json({ message: 'Welcome to the protected route' });
-};
-
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+}

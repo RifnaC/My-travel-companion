@@ -1,11 +1,14 @@
 import express from 'express';
+import { login, register, verified } from '../controllers/authController.js';
 const router = express.Router();
-import { home, login, register, verifyEmail } from '../controllers/authController.js';
-import { authMiddleware } from '../middlewares/authMiddleware.js';
 
+// Register Route
 router.post('/register', register);
-router.get('/verify', verifyEmail);
+
+// Verify Email Route
+router.get('/verify/:token', verified);
+
+// Login Route
 router.post('/login', login);
-router.get('/protected', authMiddleware, home);
 
 export default router;
